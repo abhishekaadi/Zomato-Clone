@@ -4,7 +4,7 @@ import { ShoppingCart, User as UserIcon, LogOut } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 const Navbar = () => {
-    const { user, logout, cart } = useStore();
+    const { user, logout, cart, setUser } = useStore();
 
     const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -27,18 +27,18 @@ const Navbar = () => {
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
+                        <Link to="/cart" className="text-gray-500 hover:text-gray-900 transition relative flex items-center mr-6">
+                            <ShoppingCart className="h-6 w-6" />
+                            {cartItemsCount > 0 && (
+                                <span className="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-zomato-red rounded-full">
+                                    {cartItemsCount}
+                                </span>
+                            )}
+                        </Link>
                         {user ? (
                             <>
                                 <Link to="/orders" className="text-gray-500 hover:text-gray-900 transition flex items-center">
                                     Orders
-                                </Link>
-                                <Link to="/cart" className="text-gray-500 hover:text-gray-900 transition relative flex items-center">
-                                    <ShoppingCart className="h-6 w-6" />
-                                    {cartItemsCount > 0 && (
-                                        <span className="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-zomato-red rounded-full">
-                                            {cartItemsCount}
-                                        </span>
-                                    )}
                                 </Link>
                                 <div className="flex items-center space-x-2 border-l pl-4 ml-4">
                                     <UserIcon className="h-5 w-5 text-gray-500" />
@@ -49,9 +49,19 @@ const Navbar = () => {
                                 </div>
                             </>
                         ) : (
-                            <div className="flex items-center space-x-4">
-                                <button className="text-gray-500 hover:text-gray-900 font-medium transition">Log in</button>
-                                <button className="text-white bg-zomato-red hover:bg-red-600 px-4 py-2 rounded-md font-medium transition shadow-sm">Sign up</button>
+                            <div className="flex items-center space-x-4 border-l pl-4">
+                                <button
+                                    onClick={() => setUser({ _id: 'u1', name: 'Guest User', email: 'guest@zomato.com' })}
+                                    className="text-gray-500 hover:text-gray-900 font-medium transition"
+                                >
+                                    Log in
+                                </button>
+                                <button
+                                    onClick={() => setUser({ _id: 'u1', name: 'Guest User', email: 'guest@zomato.com' })}
+                                    className="text-white bg-zomato-red hover:bg-red-600 px-4 py-2 rounded-md font-medium transition shadow-sm"
+                                >
+                                    Sign up
+                                </button>
                             </div>
                         )}
                     </div>

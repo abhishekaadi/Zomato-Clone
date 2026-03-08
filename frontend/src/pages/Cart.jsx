@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus } from 'lucide-react';
 
 const Cart = () => {
-    const { cart, removeFromCart, updateQuantity, clearCart, user } = useStore();
+    const { cart, removeFromCart, updateQuantity, clearCart, user, openAuthModal } = useStore();
     const navigate = useNavigate();
     const [address, setAddress] = useState('');
     const [error, setError] = useState('');
@@ -16,6 +16,11 @@ const Cart = () => {
     const grandTotal = totalAmount + deliveryFee + taxes;
 
     const handleCheckout = () => {
+        if (!user) {
+            openAuthModal('login');
+            return;
+        }
+
         // Basic mock checkout
         if (!address.trim()) {
             setError('Please enter a delivery address above to proceed.');
@@ -138,9 +143,9 @@ const Cart = () => {
 
                     <button
                         onClick={handleCheckout}
-                        className="w-full bg-zomato-red hover:bg-red-600 text-white font-bold py-3 rounded-xl transition text-lg shadow-md"
+                        className="w-full bg-zomato-red hover:bg-red-600 text-white font-bold py-3 rounded-xl transition text-lg shadow-md mt-4"
                     >
-                        Place Mock Order
+                        {user ? 'Place Mock Order' : 'Log in to Place Order'}
                     </button>
                 </div>
             </div>

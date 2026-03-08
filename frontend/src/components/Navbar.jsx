@@ -2,9 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, User as UserIcon, LogOut } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useEffect } from 'react';
 
 const Navbar = () => {
-    const { user, logout, cart, setUser } = useStore();
+    const { user, logout, cart, setUser, openAuthModal } = useStore();
+
+    useEffect(() => {
+        // Load user from localStorage on initial render
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
+        }
+    }, []);
 
     const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -51,13 +60,13 @@ const Navbar = () => {
                         ) : (
                             <div className="flex items-center space-x-4 border-l pl-4">
                                 <button
-                                    onClick={() => setUser({ _id: 'u1', name: 'Guest User', email: 'guest@zomato.com' })}
+                                    onClick={() => openAuthModal('login')}
                                     className="text-gray-500 hover:text-gray-900 font-medium transition"
                                 >
                                     Log in
                                 </button>
                                 <button
-                                    onClick={() => alert("Registration is bypassed in this mock layout. Please click 'Log in' instead!")}
+                                    onClick={() => openAuthModal('signup')}
                                     className="text-white bg-zomato-red hover:bg-red-600 px-4 py-2 rounded-md font-medium transition shadow-sm"
                                 >
                                     Sign up

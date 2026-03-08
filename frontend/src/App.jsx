@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import RestaurantMenu from './pages/RestaurantMenu';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
+import AuthModal from './components/AuthModal';
 
 function App() {
     return (
@@ -18,6 +19,7 @@ function App() {
                         <Route path="/orders" element={<Orders />} />
                     </Routes>
                 </main>
+                <AuthModal />
             </div>
         </Router>
     );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus } from 'lucide-react';
@@ -7,6 +7,8 @@ const Cart = () => {
     const { cart, removeFromCart, updateQuantity, clearCart, user } = useStore();
     const navigate = useNavigate();
     const [address, setAddress] = useState('');
+    const [error, setError] = useState('');
+    const addressRef = useRef(null);
 
     const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const deliveryFee = 40;
@@ -15,10 +17,12 @@ const Cart = () => {
 
     const handleCheckout = () => {
         // Basic mock checkout
-        if (!address) {
-            alert('Please enter a delivery address');
+        if (!address.trim()) {
+            setError('Please enter a delivery address above to proceed.');
+            if (addressRef.current) addressRef.current.focus();
             return;
         }
+        setError('');
 
         // In a real app, this would make an API call to POST /api/orders
         const mockOrder = {
@@ -100,11 +104,13 @@ const Cart = () => {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
                     <h3 className="font-bold text-xl mb-4 text-gray-800">Delivery Address</h3>
                     <textarea
-                        className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-zomato-red focus:ring-1 focus:ring-zomato-red transition h-24 resize-none"
+                        ref={addressRef}
+                        className={`w-full border ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-lg p-3 outline-none focus:border-zomato-red focus:ring-1 focus:ring-zomato-red transition h-24 resize-none`}
                         placeholder="Enter your full delivery address..."
                         value={address}
-                        onChange={(e) => setAddress(e.target.value)}
+                        onChange={(e) => { setAddress(e.target.value); setError(''); }}
                     ></textarea>
+                    {error && <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>}
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">

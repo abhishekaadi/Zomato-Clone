@@ -57,7 +57,7 @@ const Navbar = () => {
                                     Log in
                                 </button>
                                 <button
-                                    onClick={() => setUser({ _id: 'u1', name: 'Guest User', email: 'guest@zomato.com' })}
+                                    onClick={() => alert("Registration is bypassed in this mock layout. Please click 'Log in' instead!")}
                                     className="text-white bg-zomato-red hover:bg-red-600 px-4 py-2 rounded-md font-medium transition shadow-sm"
                                 >
                                     Sign up

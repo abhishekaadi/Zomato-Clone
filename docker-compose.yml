@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: zomato_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - zomato-network
+
+  backend:
+    build: ./backend
+    container_name: zomato_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/zomato
+      - PORT=5000
+      - JWT_SECRET=supersecretjwtkeyzomato123
+    depends_on:
+      - mongodb
+    networks:
+      - zomato-network
+
+  frontend:
+    build: ./frontend
+    container_name: zomato_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - zomato-network
+
+networks:
+  zomato-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

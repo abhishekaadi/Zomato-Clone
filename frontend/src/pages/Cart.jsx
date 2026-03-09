@@ -1,27 +1,59 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Minus } from 'lucide-react';
+import axios from 'axios';
+import { Trash2, Plus, Minus, CheckCircle2 } from 'lucide-react';
 
 const Cart = () => {
     const { cart, removeFromCart, updateQuantity, clearCart, user, openAuthModal } = useStore();
     const navigate = useNavigate();
     const [address, setAddress] = useState('');
     const [error, setError] = useState('');
+    const [couponCode, setCouponCode] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponError, setCouponError] = useState('');
     const addressRef = useRef(null);
 
     const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const deliveryFee = 40;
-    const taxes = totalAmount * 0.05; // 5% GST
-    const grandTotal = totalAmount + deliveryFee + taxes;
 
-    const handleCheckout = () => {
+    // Apply Coupon Logic
+    let discount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.code === 'WELCOME50') {
+            discount = Math.min(totalAmount * 0.5, 200); // 50% off, max 200
+        } else if (appliedCoupon.code === 'ZOMATO20') {
+            discount = Math.min(totalAmount * 0.2, 100); // 20% off, max 100
+        }
+    }
+
+    const discountedTotal = totalAmount - discount;
+    const taxes = discountedTotal * 0.05; // 5% GST on discounted amount
+    const grandTotal = discountedTotal + deliveryFee + taxes;
+
+    const handleApplyCoupon = () => {
+        const code = couponCode.toUpperCase().trim();
+        if (code === 'WELCOME50' || code === 'ZOMATO20') {
+            setAppliedCoupon({ code });
+            setCouponError('');
+            setCouponCode('');
+        } else {
+            setCouponError('Invalid or expired coupon code');
+            setAppliedCoupon(null);
+        }
+    };
+
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponError('');
+    };
+
+    const handleCheckout = async () => {
         if (!user) {
             openAuthModal('login');
             return;
         }
 
-        // Basic mock checkout
         if (!address.trim()) {
             setError('Please enter a delivery address above to proceed.');
             if (addressRef.current) addressRef.current.focus();
@@ -29,21 +61,35 @@ const Cart = () => {
         }
         setError('');
 
-        // In a real app, this would make an API call to POST /api/orders
-        const mockOrder = {
-            _id: 'ord_' + Math.random().toString(36).substr(2, 9),
-            items: cart,
-            totalAmount: grandTotal,
-            status: 'Pending',
-            createdAt: new Date().toISOString()
-        };
+        try {
+            const orderData = {
+                restaurantId: cart[0].restaurantId,
+                items: cart.map(item => ({
+                    menuItem: item._id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                totalAmount: grandTotal,
+                discount,
+                couponApplied: appliedCoupon ? appliedCoupon.code : null,
+                deliveryAddress: address
+            };
 
-        // Save to local storage for Orders page mock
-        const existingOrders = JSON.parse(localStorage.getItem('mockOrders') || '[]');
-        localStorage.setItem('mockOrders', JSON.stringify([mockOrder, ...existingOrders]));
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+            };
 
-        clearCart();
-        navigate('/orders');
+            await axios.post('/api/orders', orderData, config);
+
+            clearCart();
+            navigate('/orders');
+        } catch (err) {
+            console.error('Error placing order:', err);
+            setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+        }
     };
 
     if (cart.length === 0) {
@@ -118,6 +164,59 @@ const Cart = () => {
                     {error && <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>}
                 </div>
 
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                    <h3 className="font-bold text-xl mb-4 text-gray-800">Available Coupons</h3>
+                    {!appliedCoupon ? (
+                        <>
+                            <div className="flex space-x-2">
+                                <input
+                                    type="text"
+                                    placeholder="Enter coupon code"
+                                    value={couponCode}
+                                    onChange={(e) => { setCouponCode(e.target.value); setCouponError(''); }}
+                                    className="flex-grow border border-gray-300 rounded-lg p-2 outline-none focus:border-zomato-red uppercase"
+                                />
+                                <button
+                                    onClick={handleApplyCoupon}
+                                    className="bg-gray-900 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-800 transition"
+                                >
+                                    APPLY
+                                </button>
+                            </div>
+                            {couponError && <p className="text-red-500 text-sm mt-2">{couponError}</p>}
+                            <div className="mt-4 space-y-2">
+                                <div className="p-3 border border-dashed border-gray-300 rounded bg-gray-50 flex justify-between items-center cursor-pointer hover:bg-gray-100" onClick={() => { setCouponCode('WELCOME50'); }}>
+                                    <div>
+                                        <p className="font-bold text-sm">WELCOME50</p>
+                                        <p className="text-xs text-gray-500">50% off up to ₹200</p>
+                                    </div>
+                                    <span className="text-zomato-red text-sm font-bold">Try</span>
+                                </div>
+                                <div className="p-3 border border-dashed border-gray-300 rounded bg-gray-50 flex justify-between items-center cursor-pointer hover:bg-gray-100" onClick={() => { setCouponCode('ZOMATO20'); }}>
+                                    <div>
+                                        <p className="font-bold text-sm">ZOMATO20</p>
+                                        <p className="text-xs text-gray-500">20% off up to ₹100</p>
+                                    </div>
+                                    <span className="text-zomato-red text-sm font-bold">Try</span>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex justify-between items-center">
+                            <div>
+                                <p className="text-green-800 font-bold flex items-center">
+                                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                                    '{appliedCoupon.code}' applied
+                                </p>
+                                <p className="text-green-600 text-sm">You saved ₹{discount.toFixed(2)}!</p>
+                            </div>
+                            <button onClick={removeCoupon} className="text-red-500 text-sm font-bold hover:underline">
+                                Remove
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="font-bold text-xl border-b pb-4 mb-4 text-gray-800">Bill Details</h3>
 
@@ -126,6 +225,12 @@ const Cart = () => {
                             <span>Item Total</span>
                             <span className="font-medium">₹{totalAmount}</span>
                         </div>
+                        {discount > 0 && (
+                            <div className="flex justify-between text-green-600 font-medium">
+                                <span>Item Discount</span>
+                                <span>-₹{discount.toFixed(2)}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span>Delivery Fee</span>
                             <span className="font-medium">₹{deliveryFee}</span>

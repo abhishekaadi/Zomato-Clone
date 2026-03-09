@@ -27,6 +27,14 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    discount: {
+        type: Number,
+        default: 0,
+    },
+    couponApplied: {
+        type: String,
+        default: null,
+    },
     deliveryAddress: {
         type: String,
         required: true,

@@ -10,47 +10,21 @@ const RestaurantMenu = () => {
     const [menu, setMenu] = useState([]);
 
     useEffect(() => {
-        // Mocking the restaurant fetch
-        setRestaurant({
-            _id: id,
-            name: 'The Great Indian Kitchen',
-            image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-            cuisine: ['North Indian', 'Mughlai'],
-            location: 'Connaught Place, New Delhi',
-            rating: 4.5,
-            deliveryTime: 35
-        });
+        const fetchRestaurantDetails = async () => {
+            try {
+                // Fetch Restaurant info
+                const { data: resData } = await axios.get(`/api/restaurants/${id}`);
+                setRestaurant(resData);
 
-        // Mocking menu fetch
-        setMenu([
-            {
-                _id: 'm1',
-                name: 'Butter Chicken',
-                description: 'Tender chicken simmered in a rich tomato base with butter and cream.',
-                price: 350,
-                image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-                category: 'Main Course',
-                isVeg: false
-            },
-            {
-                _id: 'm2',
-                name: 'Paneer Tikka Masala',
-                description: 'Grilled cottage cheese in a spicy and creamy onion-tomato gravy.',
-                price: 280,
-                image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-                category: 'Main Course',
-                isVeg: true
-            },
-            {
-                _id: 'm3',
-                name: 'Garlic Naan',
-                description: 'Soft Indian flatbread topped with garlic and butter.',
-                price: 60,
-                image: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
-                category: 'Breads',
-                isVeg: true
+                // Fetch Menu items for this restaurant
+                const { data: menuData } = await axios.get(`/api/restaurants/${id}/menu`);
+                setMenu(menuData);
+            } catch (error) {
+                console.error('Error fetching restaurant details:', error);
             }
-        ]);
+        };
+
+        fetchRestaurantDetails();
     }, [id]);
 
     if (!restaurant) return <div className="p-8 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zomato-red mx-auto"></div></div>;

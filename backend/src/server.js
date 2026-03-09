@@ -55,8 +55,14 @@ app.set('socketio', io);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://mongodb:27017/zomato')
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.log('MongoDB Connection Error: ', err));
+    .then(() => console.log('✅ MongoDB Connected'))
+    .catch(err => console.error('❌ MongoDB Connection Error: ', err));
+
+// RabbitMQ Connection & Consumer setup
+const { connectRabbitMQ, consumeOrderUpdates } = require('./utils/rabbitmq');
+connectRabbitMQ().then(() => {
+    consumeOrderUpdates(io);
+});
 
 const PORT = process.env.PORT || 5000;
 

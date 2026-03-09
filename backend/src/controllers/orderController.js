@@ -1,11 +1,12 @@
 const Order = require('../models/Order');
+const { publishOrderUpdate } = require('../utils/rabbitmq');
 
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
 const createOrder = async (req, res) => {
     try {
-        const { restaurantId, items, totalAmount, deliveryAddress } = req.body;
+        const { restaurantId, items, totalAmount, discount, couponApplied, deliveryAddress } = req.body;
 
         if (items && items.length === 0) {
             return res.status(400).json({ message: 'No order items' });
@@ -16,19 +17,18 @@ const createOrder = async (req, res) => {
             restaurantId,
             items,
             totalAmount,
+            discount,
+            couponApplied,
             deliveryAddress,
         });
 
         const createdOrder = await order.save();
 
-        // Emit event to room order_{orderId}
-        const io = req.app.get('socketio');
-        if (io) {
-            io.to(`order_${createdOrder._id}`).emit('orderStatusUpdate', {
-                status: createdOrder.status,
-                orderId: createdOrder._id,
-            });
-        }
+        // Emit event to RabbitMQ message broker instead of direct Socket.io
+        publishOrderUpdate({
+            status: createdOrder.status,
+            orderId: createdOrder._id,
+        });
 
         res.status(201).json(createdOrder);
     } catch (error) {
@@ -61,14 +61,11 @@ const updateOrderStatus = async (req, res) => {
             order.status = req.body.status || order.status;
             const updatedOrder = await order.save();
 
-            // Emit real-time tracking update
-            const io = req.app.get('socketio');
-            if (io) {
-                io.to(`order_${updatedOrder._id}`).emit('orderStatusUpdate', {
-                    status: updatedOrder.status,
-                    orderId: updatedOrder._id,
-                });
-            }
+            // Emit real-time tracking update via RabbitMQ broker
+            publishOrderUpdate({
+                status: updatedOrder.status,
+                orderId: updatedOrder._id,
+            });
 
             res.json(updatedOrder);
         } else {

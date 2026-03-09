@@ -7,45 +7,16 @@ const Home = () => {
     const { restaurants, setRestaurants } = useStore();
 
     useEffect(() => {
-        // In a real app, this would fetch from backend API
-        // const fetchRestaurants = async () => {
-        //   const { data } = await axios.get('/api/restaurants');
-        //   setRestaurants(data);
-        // };
-        // fetchRestaurants();
-
-        // Mock Data for immediate UI rendering without backend attached yet
-        const mockRestaurants = [
-            {
-                _id: '1',
-                name: 'The Great Indian Kitchen',
-                image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-                cuisine: ['North Indian', 'Mughlai'],
-                location: 'Connaught Place, New Delhi',
-                rating: 4.5,
-                deliveryTime: 35
-            },
-            {
-                _id: '2',
-                name: 'Burger & Co.',
-                image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-                cuisine: ['Burger', 'American', 'Fast Food'],
-                location: 'Hauz Khas Village',
-                rating: 4.2,
-                deliveryTime: 25
-            },
-            {
-                _id: '3',
-                name: 'Sushi Zen',
-                image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-                cuisine: ['Japanese', 'Sushi', 'Asian'],
-                location: 'Cyber Hub, Gurugram',
-                rating: 4.8,
-                deliveryTime: 45
+        const fetchRestaurants = async () => {
+            try {
+                const { data } = await axios.get('/api/restaurants');
+                setRestaurants(data);
+            } catch (error) {
+                console.error('Error fetching restaurants:', error);
             }
-        ];
-        setRestaurants(mockRestaurants);
-    }, []);
+        };
+        fetchRestaurants();
+    }, [setRestaurants]);
 
     return (
         <div>

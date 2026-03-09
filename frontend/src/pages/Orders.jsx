@@ -1,32 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { Package, Clock, CheckCircle2, MapPin } from 'lucide-react';
-
-const SOCKET_SERVER_URL = 'http://localhost:5000'; // Default backend URL
+import axios from 'axios';
+import { useStore } from '../store/useStore';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState(null);
+    const { user } = useStore();
 
     useEffect(() => {
         // Initialize Socket.io connection - using relative path to root since Nginx proxies /socket.io to backend
         const newSocket = io({ transports: ['polling', 'websocket'] });
         setSocket(newSocket);
 
-        // Load mock orders
-        const loadedOrders = JSON.parse(localStorage.getItem('mockOrders') || '[]');
-        setOrders(loadedOrders);
+        const fetchOrders = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                    },
+                };
+                const { data } = await axios.get('/api/orders/myorders', config);
+                setOrders(data);
 
-        // Join room for each order to listen for status updates
-        loadedOrders.forEach(order => {
-            newSocket.emit('joinOrderRoom', order._id);
-        });
+                // Join room for each order to listen for status updates
+                data.forEach(order => {
+                    newSocket.emit('joinOrderRoom', order._id);
+                });
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchOrders();
 
         // Listen for status updates
         newSocket.on('orderStatusUpdate', (data) => {
             console.log('Order status updated from socket:', data);
             setOrders(prevOrders => prevOrders.map(order => {
-                if (order._id === data.orderId || order._id === `ord_${data.orderId.substring(4)}`) {
+                if (order._id === data.orderId) {
                     return { ...order, status: data.status };
                 }
                 return order;
@@ -34,7 +54,7 @@ const Orders = () => {
         });
 
         return () => newSocket.close();
-    }, []);
+    }, [user]);
 
     // Development helper to simulate status changes
     const simulateStatusUpdate = (orderId, newStatus) => {
@@ -45,12 +65,16 @@ const Orders = () => {
         // which would then trigger the socket emission from the backend to all clients viewing this order.
     };
 
+    if (loading) {
+        return <div className="p-8 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zomato-red mx-auto"></div></div>;
+    }
+
     if (orders.length === 0) {
         return (
             <div className="text-center py-20">
                 <Package className="w-20 h-20 text-gray-300 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-gray-700">No Orders yet</h2>
-                <p className="text-gray-500 mt-2">Looks like you haven't made your menu yet.</p>
+                <p className="text-gray-500 mt-2">Looks like you haven't ordered yet.</p>
             </div>
         );
     }
@@ -95,6 +119,14 @@ const Orders = () => {
                                     </li>
                                 ))}
                             </ul>
+
+                            {order.discount > 0 && (
+                                <div className="flex justify-between mt-2 pt-2 text-sm font-medium text-green-600">
+                                    <span>Discount ({order.couponApplied})</span>
+                                    <span>-₹{order.discount.toFixed(2)}</span>
+                                </div>
+                            )}
+
                             <div className="flex justify-between mt-3 pt-3 border-t font-bold text-gray-900">
                                 <span>Total Paid</span>
                                 <span>₹{order.totalAmount.toFixed(2)}</span>
